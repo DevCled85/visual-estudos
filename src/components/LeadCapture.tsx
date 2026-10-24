@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { STORAGE_KEY_ACCESS } from '../data/flashcards';
-import { CheckCircle2, ArrowRight } from 'lucide-react';
+import { sendWelcomeEmail } from '../services/emailService';
+import { sendWhatsAppWelcome, buildWhatsAppUrl } from '../services/whatsappService';
+import { CheckCircle2, MessageCircle, Mail } from 'lucide-react';
 
 interface LeadCaptureProps {
   onUnlocked: () => void;
@@ -16,6 +18,7 @@ export const LeadCapture: React.FC<LeadCaptureProps> = ({ onUnlocked, onOpenPriv
   const [marketing, setMarketing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [whatsappSentUrl, setWhatsappSentUrl] = useState<string | null>(null);
 
   const formatPhoneNumber = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 11);
@@ -41,7 +44,7 @@ export const LeadCapture: React.FC<LeadCaptureProps> = ({ onUnlocked, onOpenPriv
       createdAt: new Date().toISOString(),
     };
 
-    // 1. Save to Cloud Firestore
+    // 1. Save to Cloud Firestore database
     try {
       await addDoc(collection(db, 'leads'), leadPayload);
     } catch (err) {
@@ -61,29 +64,40 @@ export const LeadCapture: React.FC<LeadCaptureProps> = ({ onUnlocked, onOpenPriv
       // ignore
     }
 
-    // 3. Dispatch automated Welcome Email in background via Brevo
-    fetch('/api/send-welcome-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(leadPayload),
-    }).catch((err) => console.warn('Disparo de e-mail em segundo plano:', err));
-
-    // 4. Dispatch automated Welcome WhatsApp in background
-    if (telefone.trim()) {
-      fetch('/api/send-whatsapp-welcome', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome: nome.trim(), telefone: telefone.trim() }),
-      }).catch((err) => console.warn('Disparo de WhatsApp em segundo plano:', err));
+    // 3. Dispatch real welcome email via Brevo
+    try {
+      const emailRes = await sendWelcomeEmail(leadPayload);
+      console.log('Envio de e-mail Brevo:', emailRes);
+    } catch (err) {
+      console.warn('Falha no envio de e-mail:', err);
     }
 
-    setFeedback('Cadastro recebido! Seus flashcards foram liberados e as boas-vindas enviadas.');
+    // 4. WhatsApp welcome message
+    if (telefone.trim()) {
+      const waUrl = buildWhatsAppUrl(nome.trim(), telefone.trim());
+      setWhatsappSentUrl(waUrl);
 
-    // Transition smoothly to Flashcards without requiring manual steps
+      // Open WhatsApp directly for the user
+      try {
+        const popup = window.open(waUrl, '_blank');
+        if (!popup) {
+          console.log('Popup bloqueado pelo navegador');
+        }
+      } catch {
+        // ignore
+      }
+
+      // Also trigger background route if backend available
+      sendWhatsAppWelcome({ nome: nome.trim(), telefone: telefone.trim() }).catch(() => {});
+    }
+
+    setFeedback('Cadastro recebido! E-mail de boas-vindas enviado e flashcards liberados.');
+
+    // Transition smoothly to Flashcards
     setTimeout(() => {
       setSubmitting(false);
       onUnlocked();
-    }, 700);
+    }, 900);
   };
 
   const handleOpenExisting = () => {
@@ -198,9 +212,22 @@ export const LeadCapture: React.FC<LeadCaptureProps> = ({ onUnlocked, onOpenPriv
         </p>
 
         {feedback && (
-          <div className="flex items-center gap-2 p-3.5 rounded-xl bg-[#172c63] border border-[#8FE4DA]/50 text-[#8FE4DA] text-sm font-semibold animate-in fade-in">
-            <CheckCircle2 className="w-5 h-5 shrink-0" />
-            <span>{feedback}</span>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 p-3.5 rounded-xl bg-[#172c63] border border-[#8FE4DA]/50 text-[#8FE4DA] text-sm font-semibold animate-in fade-in">
+              <CheckCircle2 className="w-5 h-5 shrink-0" />
+              <span>{feedback}</span>
+            </div>
+            {whatsappSentUrl && (
+              <a
+                href={whatsappSentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full p-2.5 rounded-xl bg-[#25D366]/20 border border-[#25D366] text-[#25D366] font-bold text-xs hover:bg-[#25D366]/30 transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Clique aqui caso seu WhatsApp não tenha aberto automaticamente ↗</span>
+              </a>
+            )}
           </div>
         )}
 
@@ -212,7 +239,7 @@ export const LeadCapture: React.FC<LeadCaptureProps> = ({ onUnlocked, onOpenPriv
           {submitting ? (
             <>
               <div className="w-4 h-4 border-2 border-[#0A1025] border-t-transparent rounded-full animate-spin" />
-              PROCESSANDO E LIBERANDO FLASHCARDS...
+              ENVIANDO E-MAIL E LIBERANDO FLASHCARDS...
             </>
           ) : (
             'LIBERAR MEUS 15 FLASHCARDS ↗'
