@@ -1,0 +1,6 @@
+{
+  "name": "Visual Estudos",
+  "description": "Flashcards interativos, casos clínicos com FisioMistério e mapas mentais para revolucionar o estudo da Fisioterapia.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,42 @@
+{
+  "entities": {
+    "Lead": {
+      "title": "Lead",
+      "description": "Lead capturado no cadastro para liberação dos flashcards e envio de boas-vindas",
+      "type": "object",
+      "properties": {
+        "nome": {
+          "type": "string",
+          "description": "Nome completo ou de preferência do usuário",
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "description": "Endereço de e-mail do usuário",
+          "maxLength": 254
+        },
+        "telefone": {
+          "type": "string",
+          "description": "Telefone ou WhatsApp do usuário",
+          "maxLength": 30
+        },
+        "marketing": {
+          "type": "boolean",
+          "description": "Consentimento para novidades e ofertas"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Momento de criação do registro"
+        }
+      },
+      "required": ["nome", "email", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Coleção pública de cadastros para liberação dos flashcards"
+    }
+  }
+}

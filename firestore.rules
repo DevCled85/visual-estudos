@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function isValidLead(data) {
+      return data.keys().hasAll(['nome', 'email', 'createdAt']) &&
+             data.keys().hasOnly(['nome', 'email', 'telefone', 'marketing', 'createdAt']) &&
+             data.nome is string && data.nome.size() > 0 && data.nome.size() <= 100 &&
+             data.email is string && data.email.size() > 0 && data.email.size() <= 254 &&
+             (!('telefone' in data) || (data.telefone is string && data.telefone.size() <= 30)) &&
+             (!('marketing' in data) || data.marketing is bool) &&
+             data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Leads collection: public can register to unlock flashcards and leads can be viewed
+    match /leads/{leadId} {
+      allow create: if isValidLead(incoming());
+      allow read: if true;
+      allow update, delete: if false;
+    }
+  }
+}
