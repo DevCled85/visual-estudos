@@ -3,9 +3,14 @@ import React from 'react';
 interface FooterProps {
   onOpenPrivacy: () => void;
   onOpenLeadsAdmin?: () => void;
+  onOpenWhatsAppConnect?: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy, onOpenLeadsAdmin }) => {
+export const Footer: React.FC<FooterProps> = ({
+  onOpenPrivacy,
+  onOpenLeadsAdmin,
+  onOpenWhatsAppConnect,
+}) => {
   return (
     <footer className="w-full max-w-5xl mx-auto py-10 px-4 text-center text-xs sm:text-sm text-[#A9C7F8] border-t border-[#324370]/40 mt-16">
       <p className="font-medium text-[#FAF9FF]/90">
@@ -46,6 +51,17 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy, onOpenLeadsAdmin 
               className="text-[#C5B0F3] hover:text-white transition-colors underline cursor-pointer font-semibold"
             >
               📊 Ver Leads (Banco de Dados)
+            </button>
+          </>
+        )}
+        {onOpenWhatsAppConnect && (
+          <>
+            <span className="text-[#596898]">•</span>
+            <button
+              onClick={onOpenWhatsAppConnect}
+              className="text-[#25D366] hover:text-white transition-colors underline cursor-pointer font-semibold flex items-center gap-1"
+            >
+              📲 Conectar WhatsApp
             </button>
           </>
         )}

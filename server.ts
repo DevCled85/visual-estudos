@@ -37,7 +37,47 @@ async function startServer() {
         brevo: Boolean(process.env.BREVO_API_KEY),
         resend: Boolean(process.env.RESEND_API_KEY),
       },
+      evolutionApi: {
+        configured: Boolean(process.env.EVOLUTION_API_URL && process.env.EVOLUTION_API_KEY),
+        url: process.env.EVOLUTION_API_URL,
+      },
     });
+  });
+
+  // Get WhatsApp QR Code and connection state
+  app.get('/api/whatsapp-status', async (_req, res) => {
+    const evoUrl = process.env.EVOLUTION_API_URL || 'https://evolution-api-latest-aqou.onrender.com';
+    const evoKey = process.env.EVOLUTION_API_KEY || 'visualestudos2026';
+    const instance = process.env.EVOLUTION_INSTANCE_NAME || 'visualestudos';
+
+    try {
+      // 1. Check connection state
+      const stateRes = await fetch(`${evoUrl}/instance/connectionState/${instance}`, {
+        headers: { apikey: evoKey },
+      });
+      const stateData = await stateRes.json();
+      const state = stateData?.instance?.state || 'close';
+
+      // 2. If not open, get QR code
+      let qrcode = null;
+      if (state !== 'open') {
+        const qrRes = await fetch(`${evoUrl}/instance/connect/${instance}`, {
+          headers: { apikey: evoKey },
+        });
+        const qrData = await qrRes.json();
+        qrcode = qrData.base64 || null;
+      }
+
+      res.json({
+        success: true,
+        state,
+        qrcode,
+        managerUrl: `${evoUrl}/manager`,
+      });
+    } catch (err: any) {
+      console.error('Erro ao consultar status WhatsApp:', err);
+      res.status(500).json({ error: err.message });
+    }
   });
 
   // API Endpoint to send welcome email

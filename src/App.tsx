@@ -13,12 +13,14 @@ import { LojaSection } from './components/LojaSection';
 import { Footer } from './components/Footer';
 import { PrivacyModal } from './components/PrivacyModal';
 import { LeadsAdminModal } from './components/LeadsAdminModal';
+import { WhatsAppConnectModal } from './components/WhatsAppConnectModal';
 import { STORAGE_KEY_ACCESS } from './data/flashcards';
 
 export default function App() {
   const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState<boolean>(false);
   const [isLeadsAdminOpen, setIsLeadsAdminOpen] = useState<boolean>(false);
+  const [isWhatsAppConnectOpen, setIsWhatsAppConnectOpen] = useState<boolean>(false);
 
   useEffect(() => {
     try {
@@ -87,6 +89,7 @@ export default function App() {
       <Footer
         onOpenPrivacy={() => setIsPrivacyOpen(true)}
         onOpenLeadsAdmin={() => setIsLeadsAdminOpen(true)}
+        onOpenWhatsAppConnect={() => setIsWhatsAppConnectOpen(true)}
       />
 
       {/* Privacy Policy Modal */}
@@ -99,6 +102,12 @@ export default function App() {
       <LeadsAdminModal
         isOpen={isLeadsAdminOpen}
         onClose={() => setIsLeadsAdminOpen(false)}
+      />
+
+      {/* WhatsApp Evolution API Connect Modal */}
+      <WhatsAppConnectModal
+        isOpen={isWhatsAppConnectOpen}
+        onClose={() => setIsWhatsAppConnectOpen(false)}
       />
     </div>
   );
